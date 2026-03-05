@@ -20,14 +20,14 @@
     <div class="max-w-6xl mx-auto">
         <header class="mb-6 text-center md:text-left">
             <h1 class="text-3xl font-bold text-slate-800">Auto Template Machine Setting Log</h1>
-            <p class="text-slate-500 text-sm">Factory Production Planning Tracker</p>
+            <p class="text-slate-500 text-sm italic font-medium text-blue-600">Garment Production Process Planning</p>
         </header>
 
         <div class="bg-white p-6 rounded-xl shadow-sm border mb-6">
             <div class="flex flex-wrap items-center justify-between mb-4 border-b pb-4 gap-2">
-                <h2 class="text-sm font-bold text-slate-400 uppercase">New Log Entry</h2>
+                <h2 class="text-sm font-bold text-slate-400 uppercase tracking-widest">New Log Entry</h2>
                 <div class="flex items-center gap-3 bg-slate-50 px-3 py-2 rounded-lg border">
-                    <span class="text-sm font-semibold text-slate-700">New Template Request</span>
+                    <span class="text-sm font-semibold text-slate-700 text-xs md:text-sm">New Template Request</span>
                     <label class="switch">
                         <input type="checkbox" id="requestToggle">
                         <span class="slider"></span>
@@ -36,40 +36,37 @@
             </div>
 
             <div class="grid grid-cols-1 md:grid-cols-5 gap-3">
-                <select id="mID" class="p-2 border rounded bg-white text-sm">
-                    <option>AQM0001</option><option>AQM0002</option><option>AQM0003</option>
-                    <option>AQM0004</option><option>AQM0005</option><option>AQM0006</option><option>AQM0007</option>
+                <select id="mID" class="p-2 border rounded bg-white text-sm font-bold text-blue-800">
+                    <option value="AQM0001">AQM0001 (ZJ-AM5770AH-750)</option>
+                    <option value="AQM0002">AQM0002 (ZJ-AMS-AH-RK900)</option>
+                    <option value="AQM0003">AQM0003 (ZJ-M5-S900H-SF)</option>
+                    <option value="AQM0004">AQM0004 (ZJ-M5-S900H-SF)</option>
+                    <option value="AQM0005">AQM0005 (JTK8T-8037AJS)</option>
+                    <option value="AQM0006">AQM0006 (M9-SS-F13-X)</option>
+                    <option value="AQM0007">AQM0007 (JTK8T-8037AJS)</option>
+                    <option value="AQM0008">AQM0008 (JTK8T-8037AJS)</option>
                 </select>
                 <select id="picName" class="p-2 border rounded bg-white text-sm">
                     <option value="">Select PIC</option>
                     <option>Keat</option><option>Viki</option><option>Ram</option>
                     <option>James</option><option>Phone</option><option>Mark</option><option>Joe</option>
                 </select>
-                <input type="text" id="fName" placeholder="File Name" class="p-2 border rounded text-sm">
+                <input type="text" id="fName" placeholder="File Name / Style" class="p-2 border rounded text-sm">
                 <input type="number" id="sTime" placeholder="Setting Time (min)" class="p-2 border rounded text-sm">
                 <button onclick="addEntry()" id="submitBtn" class="bg-blue-600 text-white font-bold py-2 rounded hover:bg-blue-700 shadow-md">Add Record</button>
             </div>
         </div>
 
         <div class="mb-4 bg-white p-6 rounded-xl border shadow-sm">
-            <div class="mb-6">
-                <h3 class="text-xs font-bold text-slate-400 uppercase mb-1">Machine Details:</h3>
-                <p class="text-xl md:text-3xl text-blue-600 font-black tracking-tight uppercase">Brand: Jack | Model: 360 Auto Template Machine</p>
+            <h3 class="text-xs font-bold text-slate-400 uppercase mb-3 tracking-widest">Filter by Machine ID:</h3>
+            <div class="flex flex-wrap gap-2 mb-6" id="filterContainer">
+                <button onclick="setMachineFilter('ALL')" id="btn-ALL" class="machine-btn px-5 py-1.5 border rounded-full text-sm bg-white active-filter shadow-sm">ALL</button>
             </div>
             
-            <div class="flex flex-wrap gap-6 items-end">
-                <div class="flex-grow">
-                    <h3 class="text-xs font-bold text-slate-400 uppercase mb-3">Filter by Machine ID:</h3>
-                    <div class="flex flex-wrap gap-2" id="filterContainer">
-                        <button onclick="setMachineFilter('ALL')" id="btn-ALL" class="machine-btn px-5 py-1.5 border rounded-full text-sm bg-white active-filter shadow-sm">ALL</button>
-                    </div>
-                </div>
-                
-                <div class="w-full md:w-80">
-                    <h3 class="text-xs font-bold text-slate-400 uppercase mb-2">Search File Name:</h3>
-                    <input type="text" id="fileSearch" oninput="applyFilters()" placeholder="Search logs..." 
-                        class="w-full p-2.5 border rounded-lg bg-slate-50 text-sm focus:ring-2 focus:ring-blue-500 outline-none">
-                </div>
+            <div class="w-full">
+                <h3 class="text-xs font-bold text-slate-400 uppercase mb-2 tracking-widest">Search Records:</h3>
+                <input type="text" id="fileSearch" oninput="applyFilters()" placeholder="Search by File Name or PIC..." 
+                    class="w-full p-2.5 border rounded-lg bg-slate-50 text-sm focus:ring-2 focus:ring-blue-500 outline-none">
             </div>
         </div>
 
@@ -83,30 +80,36 @@
                         <th class="p-3 font-semibold text-slate-600">Type</th>
                         <th class="p-3 font-semibold text-slate-600">File Name</th>
                         <th class="p-3 font-semibold text-slate-600">Time</th>
-                        <th class="p-3 font-semibold text-slate-600 text-center">Action</th>
+                        <th class="p-3 font-semibold text-slate-600 text-center">Admin</th>
                     </tr>
                 </thead>
                 <tbody id="logTable">
                     <tr><td colspan="7" class="p-10 text-center text-slate-400 italic">No records found.</td></tr>
                 </tbody>
             </table>
+            <div class="bg-slate-50 p-4 border-t flex justify-end items-center gap-4">
+                <span class="text-slate-500 font-bold text-sm uppercase">Total Setting Time:</span>
+                <span id="totalMinutes" class="text-2xl font-black text-blue-600">0</span>
+                <span class="text-blue-600 font-bold text-sm uppercase">Minutes</span>
+            </div>
         </div>
 
-        <div class="mt-6 flex justify-between items-center">
+        <div class="mt-6 flex flex-wrap justify-between items-center gap-4">
             <button onclick="exportToExcel()" class="bg-emerald-600 text-white px-6 py-2.5 rounded-lg font-bold flex items-center gap-2 hover:bg-emerald-700 shadow-md">
                 📥 Export Local Backup (.csv)
             </button>
-            <button onclick="clearLogs()" class="text-red-400 text-xs hover:text-red-600 font-medium">Clear All History</button>
+            <p class="text-slate-400 text-xs italic">Only Admin can remove records from local history.</p>
         </div>
     </div>
 
     <script>
         const powerAutomateURL = "https://defaultb4f081a089004baaa6a8ff79312af2.61.environment.api.powerplatform.com:443/powerautomate/automations/direct/workflows/8467b362b45c4408a5c3b36138d34d8d/triggers/manual/paths/invoke?api-version=1&sp=%2Ftriggers%2Fmanual%2Frun&sv=1.0&sig=kYDfwYnTE9IU71pqIibsp0QU2WYzQ0zORaGj2bjaDAs";
 
-        let allRecords = JSON.parse(localStorage.getItem('factory_logs_final')) || [];
+        let allRecords = JSON.parse(localStorage.getItem('factory_logs_final_v6')) || [];
         let currentMachineFilter = 'ALL';
-        const machines = ["AQM0001", "AQM0002", "AQM0003", "AQM0004", "AQM0005", "AQM0006", "AQM0007"];
+        const machines = ["AQM0001", "AQM0002", "AQM0003", "AQM0004", "AQM0005", "AQM0006", "AQM0007", "AQM0008"];
 
+        // Setup Filter Buttons
         const filterContainer = document.getElementById('filterContainer');
         machines.forEach(m => {
             const btn = document.createElement('button');
@@ -127,7 +130,7 @@
             if(!pic || !f || !t) return;
 
             const entry = {
-                id: Date.now(), // Unique ID for deletion
+                id: Date.now(),
                 timestamp: new Date().toLocaleString(),
                 machine: m,
                 pic: pic,
@@ -148,7 +151,7 @@
                 });
                 
                 allRecords.unshift(entry);
-                localStorage.setItem('factory_logs_final', JSON.stringify(allRecords));
+                localStorage.setItem('factory_logs_final_v6', JSON.stringify(allRecords));
                 
                 document.getElementById('fName').value = '';
                 document.getElementById('sTime').value = '';
@@ -157,7 +160,7 @@
 
             } catch (error) {
                 allRecords.unshift(entry);
-                localStorage.setItem('factory_logs_final', JSON.stringify(allRecords));
+                localStorage.setItem('factory_logs_final_v6', JSON.stringify(allRecords));
                 applyFilters();
             } finally {
                 btn.innerText = "Add Record";
@@ -166,10 +169,10 @@
         }
 
         function deleteRecord(id) {
-            const pw = prompt("Admin Password Required to Delete:");
+            const pw = prompt("Admin password to remove entry:");
             if (pw === "admin") {
                 allRecords = allRecords.filter(record => record.id !== id);
-                localStorage.setItem('factory_logs_final', JSON.stringify(allRecords));
+                localStorage.setItem('factory_logs_final_v6', JSON.stringify(allRecords));
                 applyFilters();
             } else if (pw !== null) {
                 alert("Incorrect Password!");
@@ -187,16 +190,20 @@
             const searchVal = document.getElementById('fileSearch').value.toLowerCase();
             const filtered = allRecords.filter(r => {
                 const matchesMachine = (currentMachineFilter === 'ALL' || r.machine === currentMachineFilter);
-                const matchesSearch = r.file.toLowerCase().includes(searchVal);
+                const matchesSearch = r.file.toLowerCase().includes(searchVal) || r.pic.toLowerCase().includes(searchVal);
                 return matchesMachine && matchesSearch;
             });
             updateTable(filtered);
+            
+            // Calculate Total Time
+            const total = filtered.reduce((acc, current) => acc + (parseFloat(current.time) || 0), 0);
+            document.getElementById('totalMinutes').innerText = total;
         }
 
         function updateTable(data) {
             const tbody = document.getElementById('logTable');
             if(data.length === 0) {
-                tbody.innerHTML = '<tr><td colspan="7" class="p-10 text-center text-slate-400">No matching records.</td></tr>';
+                tbody.innerHTML = '<tr><td colspan="7" class="p-10 text-center text-slate-400 italic">No matching records.</td></tr>';
                 return;
             }
             tbody.innerHTML = data.map(r => `
@@ -212,7 +219,7 @@
                     <td class="p-3 text-slate-700 font-mono">${r.file}</td>
                     <td class="p-3 font-bold text-slate-800">${r.time} min</td>
                     <td class="p-3 text-center">
-                        <button onclick="deleteRecord(${r.id})" class="text-red-500 hover:text-red-700 font-bold text-xs uppercase p-1">Delete</button>
+                        <button onclick="deleteRecord(${r.id})" class="text-red-400 hover:text-red-600 font-bold text-[10px] uppercase tracking-tighter">Remove</button>
                     </td>
                 </tr>
             `).join('');
@@ -227,20 +234,10 @@
             const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
             const link = document.createElement("a");
             link.href = URL.createObjectURL(blob);
-            link.download = `Log_Backup_${new Date().toISOString().slice(0,10)}.csv`;
+            link.download = `Machine_Setting_Log_${new Date().toISOString().slice(0,10)}.csv`;
             link.click();
         }
 
-        function clearLogs() {
-            const pw = prompt("Admin Password Required to Clear All:");
-            if (pw === "admin") {
-                allRecords = [];
-                localStorage.removeItem('factory_logs_final');
-                applyFilters();
-            } else if (pw !== null) {
-                alert("Incorrect Password!");
-            }
-        }
         applyFilters();
     </script>
 </body>
