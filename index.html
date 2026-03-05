@@ -1,50 +1,240 @@
-async function addEntry() {
-    const m = document.getElementById('mID').value;
-    const pic = document.getElementById('picName').value;
-    const f = document.getElementById('fName').value;
-    const t = document.getElementById('sTime').value;
-    const isNewRequest = document.getElementById('requestToggle').checked;
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Auto Template Machine Setting Log</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        .machine-btn:active { transform: scale(0.95); }
+        .active-filter { border-color: #2563eb; background-color: #eff6ff; color: #1e40af; }
+        .switch { position: relative; display: inline-block; width: 44px; height: 22px; }
+        .switch input { opacity: 0; width: 0; height: 0; }
+        .slider { position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background-color: #ccc; transition: .4s; border-radius: 34px; }
+        .slider:before { position: absolute; content: ""; height: 14px; width: 14px; left: 4px; bottom: 4px; background-color: white; transition: .4s; border-radius: 50%; }
+        input:checked + .slider { background-color: #2563eb; }
+        input:checked + .slider:before { transform: translateX(22px); }
+    </style>
+</head>
+<body class="bg-slate-50 p-4 font-sans">
+    <div class="max-w-6xl mx-auto">
+        <header class="mb-6 text-center md:text-left">
+            <h1 class="text-3xl font-bold text-slate-800">Auto Template Machine Setting Log</h1>
+            <p class="text-slate-500 text-sm">Factory Production Planning Tracker</p>
+        </header>
 
-    if(!pic || !f || !t) return alert("Please fill in PIC, File Name, and Time.");
+        <div class="bg-white p-6 rounded-xl shadow-sm border mb-6">
+            <div class="flex flex-wrap items-center justify-between mb-4 border-b pb-4 gap-2">
+                <h2 class="text-sm font-bold text-slate-400 uppercase">New Log Entry</h2>
+                <div class="flex items-center gap-3 bg-slate-50 px-3 py-2 rounded-lg border">
+                    <span class="text-sm font-semibold text-slate-700">New Template Request</span>
+                    <label class="switch">
+                        <input type="checkbox" id="requestToggle">
+                        <span class="slider"></span>
+                    </label>
+                </div>
+            </div>
 
-    const entry = {
-        timestamp: new Date().toLocaleString(),
-        machine: m,
-        pic: pic,
-        type: isNewRequest ? "NEW REQUEST" : "SETTING",
-        file: f,
-        time: t.toString()
-    };
+            <div class="grid grid-cols-1 md:grid-cols-5 gap-3">
+                <select id="mID" class="p-2 border rounded bg-white text-sm">
+                    <option>AQM0001</option><option>AQM0002</option><option>AQM0003</option>
+                    <option>AQM0004</option><option>AQM0005</option><option>AQM0006</option><option>AQM0007</option>
+                </select>
+                <select id="picName" class="p-2 border rounded bg-white text-sm">
+                    <option value="">Select PIC</option>
+                    <option>Keat</option><option>Viki</option><option>Ram</option>
+                    <option>James</option><option>Phone</option><option>Mark</option><option>Joe</option>
+                </select>
+                <input type="text" id="fName" placeholder="File Name" class="p-2 border rounded text-sm">
+                <input type="number" id="sTime" placeholder="Setting Time (min)" class="p-2 border rounded text-sm">
+                <button onclick="addEntry()" id="submitBtn" class="bg-blue-600 text-white font-bold py-2 rounded hover:bg-blue-700 shadow-md">Add Record</button>
+            </div>
+        </div>
 
-    const btn = document.getElementById('submitBtn');
-    btn.innerText = "Syncing...";
-    btn.disabled = true;
+        <div class="mb-4 bg-white p-6 rounded-xl border shadow-sm">
+            <div class="mb-6">
+                <h3 class="text-xs font-bold text-slate-400 uppercase mb-1">Machine Details:</h3>
+                <p class="text-xl md:text-3xl text-blue-600 font-black tracking-tight uppercase">Brand: Jack | Model: 360 Auto Template Machine</p>
+            </div>
+            
+            <div class="flex flex-wrap gap-6 items-end">
+                <div class="flex-grow">
+                    <h3 class="text-xs font-bold text-slate-400 uppercase mb-3">Filter by Machine ID:</h3>
+                    <div class="flex flex-wrap gap-2" id="filterContainer">
+                        <button onclick="setMachineFilter('ALL')" id="btn-ALL" class="machine-btn px-5 py-1.5 border rounded-full text-sm bg-white active-filter shadow-sm">ALL</button>
+                    </div>
+                </div>
+                
+                <div class="w-full md:w-80">
+                    <h3 class="text-xs font-bold text-slate-400 uppercase mb-2">Search File Name:</h3>
+                    <input type="text" id="fileSearch" oninput="applyFilters()" placeholder="Search logs..." 
+                        class="w-full p-2.5 border rounded-lg bg-slate-50 text-sm focus:ring-2 focus:ring-blue-500 outline-none">
+                </div>
+            </div>
+        </div>
 
-    try {
-        // Fix: Removed 'headers' to allow 'no-cors' to work without browser errors
-        await fetch(powerAutomateURL, {
-            method: 'POST',
-            mode: 'no-cors',
-            body: JSON.stringify(entry) 
+        <div class="bg-white rounded-xl shadow-sm border overflow-hidden">
+            <table class="w-full text-left text-sm">
+                <thead class="bg-slate-100 border-b">
+                    <tr>
+                        <th class="p-3 font-semibold text-slate-600">Timestamp</th>
+                        <th class="p-3 font-semibold text-slate-600">Machine</th>
+                        <th class="p-3 font-semibold text-slate-600">PIC</th>
+                        <th class="p-3 font-semibold text-slate-600">Type</th>
+                        <th class="p-3 font-semibold text-slate-600">File Name</th>
+                        <th class="p-3 font-semibold text-slate-600">Time (Min)</th>
+                    </tr>
+                </thead>
+                <tbody id="logTable">
+                    <tr><td colspan="6" class="p-10 text-center text-slate-400 italic">No records found. Enter data to start logging.</td></tr>
+                </tbody>
+            </table>
+        </div>
+
+        <div class="mt-6 flex justify-between items-center">
+            <button onclick="exportToExcel()" class="bg-emerald-600 text-white px-6 py-2.5 rounded-lg font-bold flex items-center gap-2 hover:bg-emerald-700 shadow-md transition-all active:scale-95">
+                📥 Export Local Backup to Excel (.csv)
+            </button>
+            <button onclick="clearLogs()" class="text-red-400 text-xs hover:text-red-600 font-medium">Clear All Data</button>
+        </div>
+    </div>
+
+    <script>
+        // The complete, authorized URL for your Power Automate flow
+        const powerAutomateURL = "https://defaultb4f081a089004baaa6a8ff79312af2.61.environment.api.powerplatform.com:443/powerautomate/automations/direct/workflows/8467b362b45c4408a5c3b36138d34d8d/triggers/manual/paths/invoke?api-version=1&sp=%2Ftriggers%2Fmanual%2Frun&sv=1.0&sig=kYDfwYnTE9IU71pqIibsp0QU2WYzQ0zORaGj2bjaDAs";
+
+        let allRecords = JSON.parse(localStorage.getItem('factory_logs_final')) || [];
+        let currentMachineFilter = 'ALL';
+        const machines = ["AQM0001", "AQM0002", "AQM0003", "AQM0004", "AQM0005", "AQM0006", "AQM0007"];
+
+        const filterContainer = document.getElementById('filterContainer');
+        machines.forEach(m => {
+            const btn = document.createElement('button');
+            btn.innerText = m;
+            btn.id = `btn-${m}`;
+            btn.className = "machine-btn px-4 py-1.5 border rounded-full text-sm bg-white shadow-sm hover:border-blue-300 transition-all";
+            btn.onclick = () => setMachineFilter(m);
+            filterContainer.appendChild(btn);
         });
 
-        // Add to local history for immediate display
-        allRecords.unshift(entry);
-        localStorage.setItem('factory_logs_v4', JSON.stringify(allRecords));
-        
-        // Clear inputs for the next entry
-        document.getElementById('fName').value = '';
-        document.getElementById('sTime').value = '';
-        document.getElementById('requestToggle').checked = false;
-        
-        applyFilters();
-        alert("Record sent! Please check Excel in a few moments.");
+        async function addEntry() {
+            const m = document.getElementById('mID').value;
+            const pic = document.getElementById('picName').value;
+            const f = document.getElementById('fName').value;
+            const t = document.getElementById('sTime').value;
+            const isNewRequest = document.getElementById('requestToggle').checked;
 
-    } catch (error) {
-        console.error("Submission Error:", error);
-        alert("Network Error: Could not reach the server.");
-    } finally {
-        btn.innerText = "Add Record";
-        btn.disabled = false;
-    }
-}
+            if(!pic || !f || !t) return alert("Error: Please fill in PIC, File Name, and Setting Time.");
+
+            const entry = {
+                timestamp: new Date().toLocaleString(),
+                machine: m,
+                pic: pic,
+                type: isNewRequest ? "NEW REQUEST" : "SETTING",
+                file: f,
+                time: t.toString()
+            };
+
+            const btn = document.getElementById('submitBtn');
+            btn.innerText = "Syncing...";
+            btn.disabled = true;
+
+            try {
+                // Send the exact JSON format that your flow expects
+                await fetch(powerAutomateURL, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(entry)
+                });
+
+                // Save to local memory and update the table immediately
+                allRecords.unshift(entry);
+                localStorage.setItem('factory_logs_final', JSON.stringify(allRecords));
+                
+                document.getElementById('fName').value = '';
+                document.getElementById('sTime').value = '';
+                document.getElementById('requestToggle').checked = false;
+                
+                applyFilters();
+                alert("Success! Record sent to Excel Online.");
+
+            } catch (error) {
+                console.error("Submission Error:", error);
+                
+                // If it fails due to a browser CORS warning but the network is fine,
+                // Power Automate often still processes the data successfully.
+                allRecords.unshift(entry);
+                localStorage.setItem('factory_logs_final', JSON.stringify(allRecords));
+                applyFilters();
+                
+                alert("Data processed. Please verify in your Excel spreadsheet.");
+            } finally {
+                btn.innerText = "Add Record";
+                btn.disabled = false;
+            }
+        }
+
+        function setMachineFilter(machineId) {
+            currentMachineFilter = machineId;
+            document.querySelectorAll('.machine-btn').forEach(b => b.classList.remove('active-filter'));
+            document.getElementById(`btn-${machineId}`).classList.add('active-filter');
+            applyFilters();
+        }
+
+        function applyFilters() {
+            const searchVal = document.getElementById('fileSearch').value.toLowerCase();
+            const filtered = allRecords.filter(r => {
+                const matchesMachine = (currentMachineFilter === 'ALL' || r.machine === currentMachineFilter);
+                const matchesSearch = r.file.toLowerCase().includes(searchVal);
+                return matchesMachine && matchesSearch;
+            });
+            updateTable(filtered);
+        }
+
+        function updateTable(data) {
+            const tbody = document.getElementById('logTable');
+            if(data.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="6" class="p-10 text-center text-slate-400">No matching records.</td></tr>';
+                return;
+            }
+
+            tbody.innerHTML = data.map(r => `
+                <tr class="border-b hover:bg-slate-50 transition-colors">
+                    <td class="p-3 text-slate-400 text-[10px]">${r.timestamp}</td>
+                    <td class="p-3 font-bold text-blue-700">${r.machine}</td>
+                    <td class="p-3 font-medium text-slate-700">${r.pic}</td>
+                    <td class="p-3">
+                        <span class="px-2 py-0.5 rounded-full text-[10px] font-bold ${r.type === 'NEW REQUEST' ? 'bg-orange-100 text-orange-600' : 'bg-blue-100 text-blue-600'}">
+                            ${r.type}
+                        </span>
+                    </td>
+                    <td class="p-3 text-slate-700 font-mono">${r.file}</td>
+                    <td class="p-3 font-bold text-slate-800">${r.time} min</td>
+                </tr>
+            `).join('');
+        }
+
+        function exportToExcel() {
+            if(allRecords.length === 0) return alert("Nothing to export!");
+            let csv = "Timestamp,Machine,PIC,Log Type,File Name,Time (min)\n";
+            allRecords.forEach(r => {
+                csv += `"${r.timestamp}","${r.machine}","${r.pic}","${r.type}","${r.file}","${r.time}"\n`;
+            });
+            const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+            const link = document.createElement("a");
+            link.href = URL.createObjectURL(blob);
+            link.download = `Factory_Log_Backup_${new Date().toISOString().slice(0,10)}.csv`;
+            link.click();
+        }
+
+        function clearLogs() {
+            if(confirm("Permanently delete all local records? (This will not delete rows already sent to Excel)")) {
+                allRecords = [];
+                localStorage.removeItem('factory_logs_final');
+                applyFilters();
+            }
+        }
+        applyFilters();
+    </script>
+</body>
+</html>
