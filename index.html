@@ -18,13 +18,13 @@
 </head>
 <body class="bg-slate-50 p-4 font-sans text-slate-900">
     <div class="max-w-6xl mx-auto">
-        <header class="mb-6 flex justify-between items-center bg-white p-6 rounded-xl border shadow-sm h-32 overflow-hidden">
-            <div class="flex-1">
-                <h1 class="text-2xl md:text-3xl font-bold text-slate-800 leading-tight">Auto Template<br>Machine Setting Log</h1>
+        <header class="mb-6 flex flex-row justify-between items-center bg-white p-6 rounded-xl border shadow-sm min-h-[120px]">
+            <div class="flex-shrink-0">
+                <h1 class="text-xl md:text-3xl font-bold text-slate-800 leading-tight">Auto Template<br>Machine Setting Log</h1>
                 <p class="text-blue-600 text-xl font-black tracking-widest mt-1">M&A</p>
             </div>
-            <div class="flex-none h-full flex items-center justify-end">
-                <img src="image_8454b6.png" alt="M&A Logo" class="h-28 w-auto object-contain">
+            <div class="flex items-center justify-end overflow-hidden ml-4">
+                <img src="image_8454b6.png" alt="M&A Logo" class="h-16 md:h-24 w-auto object-contain">
             </div>
         </header>
 
@@ -58,7 +58,7 @@
                 </select>
                 <input type="text" id="fName" placeholder="File Name / Style" class="p-2 border rounded text-sm">
                 <input type="number" id="sTime" placeholder="Setting Time (min)" class="p-2 border rounded text-sm">
-                <button onclick="addEntry()" id="submitBtn" class="bg-blue-600 text-white font-bold py-2 rounded hover:bg-blue-700 shadow-md">Add Record</button>
+                <button onclick="addEntry()" id="submitBtn" class="bg-blue-600 text-white font-bold py-2 rounded hover:bg-blue-700 shadow-md transition-all active:scale-95">Add Record</button>
             </div>
         </div>
 
@@ -78,7 +78,7 @@
                     <h3 class="text-xs font-bold text-slate-400 uppercase tracking-widest">Search Records:</h3>
                     <div class="flex items-center gap-2">
                         <span id="syncStatus" class="text-[10px] text-slate-400 font-bold">Syncing...</span>
-                        <button onclick="refreshLiveLogs()" class="text-[10px] bg-slate-100 px-2 py-0.5 rounded border hover:bg-slate-200">Manual Sync</button>
+                        <button onclick="refreshLiveLogs()" class="text-[10px] bg-slate-100 px-2 py-0.5 rounded border hover:bg-slate-200">Force Refresh</button>
                     </div>
                 </div>
                 <input type="text" id="fileSearch" oninput="applyFilters()" placeholder="Search by File Name or PIC..." 
@@ -99,7 +99,7 @@
                     </tr>
                 </thead>
                 <tbody id="logTable">
-                    <tr><td colspan="6" class="p-10 text-center text-slate-400 italic">Connecting to M&A Database...</td></tr>
+                    <tr><td colspan="6" class="p-10 text-center text-slate-400 italic">Syncing with M&A Central Database...</td></tr>
                 </tbody>
             </table>
         </div>
@@ -109,15 +109,16 @@
         const postURL = "https://defaultb4f081a089004baaa6a8ff79312af2.61.environment.api.powerplatform.com:443/powerautomate/automations/direct/workflows/8467b362b45c4408a5c3b36138d34d8d/triggers/manual/paths/invoke?api-version=1&sp=%2Ftriggers%2Fmanual%2Frun&sv=1.0&sig=kYDfwYnTE9IU71pqIibsp0QU2WYzQ0zORaGj2bjaDAs";
         const fetchURL = "https://defaultb4f081a089004baaa6a8ff79312af2.61.environment.api.powerplatform.com:443/powerautomate/automations/direct/workflows/47006a48f8764a49ab01dbb665617acf/triggers/manual/paths/invoke?api-version=1&sp=%2Ftriggers%2Fmanual%2Frun&sv=1.0&sig=2eqeoBWF-80BETYDfV2HdHZeqJW7-fDYjd3GXri1wNo";
 
+        // Updated Brands
         const machineSpecs = {
-            "AQM0001": { brand: "JACK", model: "ZJ-AM5770AH-750" },
-            "AQM0002": { brand: "JACK", model: "ZJ-AMS-AH-RK900" },
-            "AQM0003": { brand: "JACK", model: "ZJ-M5-S900H-SF" },
-            "AQM0004": { brand: "JACK", model: "ZJ-M5-S900H-SF" },
-            "AQM0005": { brand: "JTK", model: "JTK8T-8037AJS" },
-            "AQM0006": { brand: "UNKNOWN", model: "M9-SS-F13-X" },
-            "AQM0007": { brand: "JTK", model: "JTK8T-8037AJS" },
-            "AQM0008": { brand: "JTK", model: "JTK8T-8037AJS" }
+            "AQM0001": { brand: "ZOJE", model: "ZJ-AM5770AH-750" },
+            "AQM0002": { brand: "ZOJE", model: "ZJ-AMS-AH-RK900" },
+            "AQM0003": { brand: "ZOJE", model: "ZJ-M5-S900H-SF" },
+            "AQM0004": { brand: "ZOJE", model: "ZJ-M5-S900H-SF" },
+            "AQM0005": { brand: "JUITA", model: "JTK8T-8037AJS" },
+            "AQM0006": { brand: "JACK", model: "M9-SS-F13-X" },
+            "AQM0007": { brand: "JUITA", model: "JTK8T-8037AJS" },
+            "AQM0008": { brand: "JUITA", model: "JTK8T-8037AJS" }
         };
 
         let allRecords = [];
@@ -134,18 +135,27 @@
             filterContainer.appendChild(btn);
         });
 
-        // Helper to find data regardless of column name variation
+        // Smart Mapping for Excel
         function getVal(item, keys) {
             for (let key of keys) {
-                if (item[key] !== undefined) return item[key];
-                // Try case-insensitive and space-replaced versions
+                if (item[key] !== undefined && item[key] !== null) return item[key];
                 for (let actualKey in item) {
-                    if (actualKey.toLowerCase().replace(/[^a-z]/g, '') === key.toLowerCase().replace(/[^a-z]/g, '')) {
+                    if (actualKey.toLowerCase().replace(/[^a-z0-9]/g, '') === key.toLowerCase().replace(/[^a-z0-9]/g, '')) {
                         return item[actualKey];
                     }
                 }
             }
             return "---";
+        }
+
+        // Fix for Excel Serial Date (e.g. 45678.123)
+        function formatTimestamp(val) {
+            if (!val || val === "---") return "---";
+            if (!isNaN(val) && parseFloat(val) > 40000) {
+                const date = new Date(Math.round((parseFloat(val) - 25569) * 86400 * 1000));
+                return date.toLocaleString();
+            }
+            return val.toString();
         }
 
         async function refreshLiveLogs() {
@@ -155,24 +165,21 @@
                 if (!response.ok) throw new Error("HTTP " + response.status);
                 
                 const data = await response.json();
-                
-                // SMART MAPPER logic
                 allRecords = data.map(item => ({
-                    timestamp: getVal(item, ['Timestamp', 'Date', 'Time_x0020_Stamp']),
+                    timestamp: formatTimestamp(getVal(item, ['Timestamp', 'Date', 'Time_x0020_Stamp', 'DateTime'])),
                     machine: getVal(item, ['Machine', 'MachineID', 'mID']),
-                    pic: getVal(item, ['PIC', 'Operator', 'Name']),
-                    type: getVal(item, ['Type', 'LogType', 'RequestType']),
-                    file: getVal(item, ['FileName', 'file name', 'File', 'Style']),
+                    pic: getVal(item, ['PIC', 'Operator', 'PICName']),
+                    type: getVal(item, ['Type', 'LogType', 'Log_x0020_Type']),
+                    file: getVal(item, ['FileName', 'file name', 'File_x0020_Name', 'Style']),
                     time: getVal(item, ['Time', 'SettingTime', 'Minutes'])
                 }));
 
-                status.innerText = "LIVE: " + new Date().toLocaleTimeString();
+                status.innerText = "LIVE SYNC OK";
                 status.className = "text-[10px] text-emerald-500 font-bold";
                 applyFilters();
             } catch (error) {
-                status.innerText = "EXCEL READ ERROR";
+                status.innerText = "SYNC FAILED (400)";
                 status.className = "text-[10px] text-red-500 font-bold";
-                console.error("Mapping Error:", error);
             }
         }
 
@@ -183,13 +190,12 @@
             const t = document.getElementById('sTime').value;
             const isNewRequest = document.getElementById('requestToggle').checked;
 
-            if(!pic || !f || !t) return alert("Please complete the form");
+            if(!pic || !f || !t) return alert("Fill all fields");
 
             const btn = document.getElementById('submitBtn');
-            btn.innerText = "Logging...";
+            btn.innerText = "Saving...";
             btn.disabled = true;
 
-            // Ensure these keys match exactly what your Post flow expects
             const entry = {
                 timestamp: new Date().toLocaleString(),
                 machine: m,
@@ -209,10 +215,10 @@
                 if(res.ok) {
                     document.getElementById('fName').value = '';
                     document.getElementById('sTime').value = '';
-                    setTimeout(refreshLiveLogs, 5000); // 5 sec delay for Excel sync
+                    setTimeout(refreshLiveLogs, 5000);
                 }
             } catch (error) {
-                alert("Upload failed.");
+                alert("Network Error");
             } finally {
                 btn.innerText = "Add Record";
                 btn.disabled = false;
@@ -248,7 +254,7 @@
         function updateTable(data) {
             const tbody = document.getElementById('logTable');
             if(data.length === 0) {
-                tbody.innerHTML = '<tr><td colspan="6" class="p-10 text-center text-slate-400 italic">No records found. Check Excel data.</td></tr>';
+                tbody.innerHTML = '<tr><td colspan="6" class="p-10 text-center text-slate-400 italic">No history found.</td></tr>';
                 return;
             }
             tbody.innerHTML = data.map(r => `
