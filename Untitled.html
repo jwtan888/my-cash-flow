@@ -4,11 +4,13 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>My Cash Flow</title>
     <style>
-        body { font-family: sans-serif; padding: 20px; background: #f0f2f5; }
-        .box { background: white; padding: 20px; border-radius: 10px; margin-bottom: 20px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
-        input, select { width: 100%; padding: 10px; margin: 10px 0; border: 1px solid #ccc; border-radius: 5px; box-sizing: border-box; }
-        h2 { color: #1a73e8; margin-top: 0; }
-        .result { font-size: 24px; font-weight: bold; color: #34a853; }
+        body { font-family: -apple-system, sans-serif; padding: 20px; background: #f0f2f5; color: #333; }
+        .box { background: white; padding: 20px; border-radius: 12px; margin-bottom: 20px; box-shadow: 0 4px 10px rgba(0,0,0,0.1); }
+        input, select { width: 100%; padding: 12px; margin: 10px 0; border: 1px solid #ddd; border-radius: 8px; font-size: 16px; box-sizing: border-box; }
+        h1 { font-size: 24px; text-align: center; color: #1a73e8; }
+        h2 { font-size: 18px; margin-top: 0; color: #444; }
+        .result-label { font-size: 14px; color: #666; margin-bottom: 5px; }
+        .result-value { font-size: 28px; font-weight: bold; color: #34a853; }
     </style>
 </head>
 <body>
@@ -16,25 +18,31 @@
     <h1>Financial Dashboard</h1>
 
     <div class="box">
-        <h2>Monthly Flow</h2>
+        <h2>Monthly Cash Flow</h2>
         <label>Monthly Income ($)</label>
-        <input type="number" id="inc" placeholder="0" oninput="calc()">
+        <input type="number" id="inc" placeholder="e.g. 5000" oninput="calc()">
         
         <label>Monthly Expenses ($)</label>
-        <input type="number" id="exp" placeholder="0" oninput="calc()">
+        <input type="number" id="exp" placeholder="e.g. 3000" oninput="calc()">
         
-        <p>Monthly Surplus: <span id="surp" class="result">$0</span></p>
+        <hr style="border:0; border-top:1px solid #eee; margin: 20px 0;">
+        
+        <div class="result-label">Monthly Surplus:</div>
+        <div id="surp" class="result-value">$0</div>
     </div>
 
     <div class="box">
-        <h2>Investment (7% Return)</h2>
+        <h2>Investment Projection</h2>
         <label>Years to Invest</label>
         <select id="yrs" onchange="calc()">
             <option value="5">5 Years</option>
             <option value="10" selected>10 Years</option>
             <option value="20">20 Years</option>
+            <option value="30">30 Years</option>
         </select>
-        <p>Projected Value: <span id="fv" class="result" style="color:#1a73e8">$0</span></p>
+        
+        <div class="result-label">Projected Value (7% Return):</div>
+        <div id="fv" class="result-value" style="color:#1a73e8">$0</div>
     </div>
 
     <script>
@@ -45,9 +53,14 @@
             document.getElementById('surp').innerText = '$' + s.toLocaleString();
 
             let y = parseInt(document.getElementById('yrs').value);
-            let r = 0.07 / 12;
-            let m = y * 12;
-            let total = s > 0 ? s * ((Math.pow(1 + r, m) - 1) / r) : 0;
+            let r = 0.07 / 12; // 7% annual interest
+            let m = y * 12;    // total months
+            
+            let total = 0;
+            if (s > 0) {
+                // Compound interest formula for monthly contributions
+                total = s * ((Math.pow(1 + r, m) - 1) / r);
+            }
             document.getElementById('fv').innerText = '$' + Math.round(total).toLocaleString();
         }
     </script>
