@@ -47,7 +47,7 @@
                 </select>
                 <input type="text" id="fName" placeholder="File Name" class="p-2 border rounded text-sm">
                 <input type="number" id="sTime" placeholder="Setting Time (min)" class="p-2 border rounded text-sm">
-                <button onclick="addEntry()" id="submitBtn" class="bg-blue-600 text-white font-bold py-2 rounded hover:bg-blue-700 shadow-md">Add Record</button>
+                <button onclick="addEntry()" id="submitBtn" class="bg-blue-600 text-white font-bold py-2 rounded hover:bg-blue-700 shadow-md transition-all active:scale-95">Add Record</button>
             </div>
         </div>
 
@@ -93,14 +93,13 @@
 
         <div class="mt-6 flex justify-between items-center">
             <button onclick="exportToExcel()" class="bg-emerald-600 text-white px-6 py-2.5 rounded-lg font-bold flex items-center gap-2 hover:bg-emerald-700 shadow-md transition-all active:scale-95">
-                📥 Export Local Backup to Excel (.csv)
+                📥 Export Local Backup (.csv)
             </button>
-            <button onclick="clearLogs()" class="text-red-400 text-xs hover:text-red-600 font-medium">Clear All Data</button>
+            <button onclick="clearLogs()" class="text-red-400 text-xs hover:text-red-600 font-medium">Clear History</button>
         </div>
     </div>
 
     <script>
-        // The complete, authorized URL for your Power Automate flow
         const powerAutomateURL = "https://defaultb4f081a089004baaa6a8ff79312af2.61.environment.api.powerplatform.com:443/powerautomate/automations/direct/workflows/8467b362b45c4408a5c3b36138d34d8d/triggers/manual/paths/invoke?api-version=1&sp=%2Ftriggers%2Fmanual%2Frun&sv=1.0&sig=kYDfwYnTE9IU71pqIibsp0QU2WYzQ0zORaGj2bjaDAs";
 
         let allRecords = JSON.parse(localStorage.getItem('factory_logs_final')) || [];
@@ -124,7 +123,7 @@
             const t = document.getElementById('sTime').value;
             const isNewRequest = document.getElementById('requestToggle').checked;
 
-            if(!pic || !f || !t) return alert("Error: Please fill in PIC, File Name, and Setting Time.");
+            if(!pic || !f || !t) return; // Silent stop if empty
 
             const entry = {
                 timestamp: new Date().toLocaleString(),
@@ -140,34 +139,29 @@
             btn.disabled = true;
 
             try {
-                // Send the exact JSON format that your flow expects
+                // Send to Excel Online
                 await fetch(powerAutomateURL, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify(entry)
                 });
 
-                // Save to local memory and update the table immediately
+                // Update Local UI
                 allRecords.unshift(entry);
                 localStorage.setItem('factory_logs_final', JSON.stringify(allRecords));
                 
+                // Clear inputs
                 document.getElementById('fName').value = '';
                 document.getElementById('sTime').value = '';
                 document.getElementById('requestToggle').checked = false;
-                
                 applyFilters();
-                alert("Success! Record sent to Excel Online.");
 
             } catch (error) {
-                console.error("Submission Error:", error);
-                
-                // If it fails due to a browser CORS warning but the network is fine,
-                // Power Automate often still processes the data successfully.
+                console.error("Sync Error:", error);
+                // Even on error, update local list so production isn't stopped
                 allRecords.unshift(entry);
                 localStorage.setItem('factory_logs_final', JSON.stringify(allRecords));
                 applyFilters();
-                
-                alert("Data processed. Please verify in your Excel spreadsheet.");
             } finally {
                 btn.innerText = "Add Record";
                 btn.disabled = false;
@@ -197,7 +191,6 @@
                 tbody.innerHTML = '<tr><td colspan="6" class="p-10 text-center text-slate-400">No matching records.</td></tr>';
                 return;
             }
-
             tbody.innerHTML = data.map(r => `
                 <tr class="border-b hover:bg-slate-50 transition-colors">
                     <td class="p-3 text-slate-400 text-[10px]">${r.timestamp}</td>
@@ -215,7 +208,7 @@
         }
 
         function exportToExcel() {
-            if(allRecords.length === 0) return alert("Nothing to export!");
+            if(allRecords.length === 0) return;
             let csv = "Timestamp,Machine,PIC,Log Type,File Name,Time (min)\n";
             allRecords.forEach(r => {
                 csv += `"${r.timestamp}","${r.machine}","${r.pic}","${r.type}","${r.file}","${r.time}"\n`;
@@ -223,12 +216,12 @@
             const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
             const link = document.createElement("a");
             link.href = URL.createObjectURL(blob);
-            link.download = `Factory_Log_Backup_${new Date().toISOString().slice(0,10)}.csv`;
+            link.download = `Log_Backup_${new Date().toISOString().slice(0,10)}.csv`;
             link.click();
         }
 
         function clearLogs() {
-            if(confirm("Permanently delete all local records? (This will not delete rows already sent to Excel)")) {
+            if(confirm("Delete local history?")) {
                 allRecords = [];
                 localStorage.removeItem('factory_logs_final');
                 applyFilters();
