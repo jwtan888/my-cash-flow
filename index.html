@@ -18,6 +18,9 @@
         @keyframes pulse-green { 0% { opacity: 1; } 50% { opacity: 0.5; } 100% { opacity: 1; } }
         .sync-active { animation: pulse-green 2s infinite; }
         td { font-size: 0.75rem; line-height: 1rem; } 
+        .manual-input { font-size: 10px; padding: 2px 4px; border: 1px solid #cbd5e1; border-radius: 4px; width: 95px; outline: none; margin-bottom: 2px; font-family: monospace; }
+        .qty-input { width: 60px; font-weight: bold; color: #2563eb; border: 1px solid #94a3b8; }
+        .manual-input:focus { border-color: #2563eb; box-shadow: 0 0 0 1px #2563eb; }
     </style>
 </head>
 <body class="bg-slate-50 p-4 font-sans text-slate-900">
@@ -27,7 +30,6 @@
                 <h1 class="text-xl md:text-3xl font-bold text-slate-800 leading-tight" id="mainTitle">Template Requests</h1>
                 <p class="text-slate-400 text-lg font-light tracking-[0.2em] mt-1 uppercase">M&A</p>
             </div>
-            
             <div id="userSessionArea" class="flex items-center gap-3 bg-slate-50 border p-2 rounded-xl shadow-inner">
                 <div id="loginView" class="flex items-center gap-2">
                     <select id="userSelect" class="text-xs font-bold p-2 border rounded bg-white outline-none focus:ring-2 focus:ring-blue-500">
@@ -53,15 +55,17 @@
         <div id="content-template" class="tab-content">
             <div class="bg-white p-6 rounded-xl border shadow-sm mb-4">
                 <div class="flex justify-between items-center mb-4 text-[10px] font-bold text-slate-400 uppercase tracking-widest">
-                    <h3>Search Templates:</h3>
-                    <span id="tempSyncStatus">Checking...</span>
+                    <h3>Search Templates:</h3><span id="tempSyncStatus">Checking...</span>
                 </div>
                 <input type="text" id="tempSearch" oninput="applyTempFilters()" placeholder="Search Style, Job No, or PIC..." class="w-full p-2.5 border rounded-lg bg-slate-50 text-sm focus:ring-2 focus:ring-blue-500 outline-none">
             </div>
             <div class="bg-white rounded-xl shadow-sm border overflow-x-auto">
                 <table class="w-full text-left">
                     <thead class="bg-slate-100 border-b text-[11px] uppercase tracking-wider text-slate-500 font-bold">
-                        <tr><th class="p-3">ID</th><th class="p-3">Start Time</th><th class="p-3">Requestor</th><th class="p-3">Style</th><th class="p-3">Job No</th><th class="p-3">Machine</th><th class="p-3">Required</th><th class="p-3">Status</th><th class="p-3">M&A PIC</th><th class="p-3">Complete Time</th></tr>
+                        <tr>
+                            <th class="p-3">ID</th><th class="p-3">Start Time</th><th class="p-3">Section</th><th class="p-3">Requestor</th><th class="p-3">Style</th>
+                            <th class="p-3">Job No</th><th class="p-3">Machine</th><th class="p-3">Required</th><th class="p-3">Status</th><th class="p-3">M&A PIC</th><th class="p-3 text-blue-600">Qty</th><th class="p-3">Complete Time</th>
+                        </tr>
                     </thead>
                     <tbody id="tempTable" class="text-slate-700"></tbody>
                 </table>
@@ -84,7 +88,8 @@
                     <select id="picName" class="p-2 border rounded bg-white text-sm">
                         <option value="">Select PIC</option><option>Keat</option><option>Viki</option><option>Ram</option><option>James</option><option>Phone</option><option>Mark</option><option>Joe</option>
                     </select>
-                    <input type="text" id="fName" placeholder="File Name / Style" class="p-2 border rounded text-sm"><input type="number" id="sTime" placeholder="Setting Time (min)" class="p-2 border rounded text-sm">
+                    <input type="text" id="fName" placeholder="File Name / Style" class="p-2 border rounded text-sm">
+                    <input type="number" id="sTime" placeholder="Setting Time (min)" class="p-2 border rounded text-sm">
                     <button onclick="addEntry()" id="submitBtn" class="bg-blue-600 text-white font-bold py-2 rounded hover:bg-blue-700 shadow-md transition-all active:scale-95">Add Record</button>
                 </div>
             </div>
@@ -121,98 +126,113 @@
         const machineSpecs = { "AQM0001": { brand: "ZOJE", model: "ZJ-AM5770AH-750" }, "AQM0002": { brand: "ZOJE", model: "ZJ-AMS-AH-RK900" }, "AQM0003": { brand: "ZOJE", model: "ZJ-M5-S900H-SF" }, "AQM0004": { brand: "ZOJE", model: "ZJ-M5-S900H-SF" }, "AQM0005": { brand: "JUITA", model: "JTK8T-8037AJS" }, "AQM0006": { brand: "JACK", model: "M9-SS-F13-X" }, "AQM0007": { brand: "JUITA", model: "JTK8T-8037AJS" }, "AQM0008": { brand: "JUITA", model: "JTK8T-8037AJS" } };
         let allRecords = [], allTemplates = [], currentUser = localStorage.getItem('ma_session_user') || null;
 
-        function switchTab(t) { document.querySelectorAll('.tab-content').forEach(el => el.classList.add('hidden')); document.getElementById(`content-${t}`).classList.remove('hidden'); document.querySelectorAll('nav button').forEach(b => b.classList.remove('tab-active')); document.getElementById(`tab-${t}`).classList.add('tab-active'); document.getElementById('mainTitle').innerText = t === 'template' ? 'Template Requests' : 'Auto Template Machine Setting Log'; }
-        function login() { const u = document.getElementById('userSelect').value; if (!u) return alert("Select Name"); localStorage.setItem('ma_session_user', u); currentUser = u; updateSessionUI(); applyTempFilters(); }
-        function logout() { localStorage.removeItem('ma_session_user'); currentUser = null; updateSessionUI(); applyTempFilters(); }
-        function updateSessionUI() { const lv = document.getElementById('loginView'), av = document.getElementById('activeUserView'); if (currentUser) { lv.classList.add('hidden'); av.classList.remove('hidden'); document.getElementById('displayUserName').innerText = currentUser; } else { lv.classList.remove('hidden'); av.classList.add('hidden'); } }
-        
-        function convertExcelDate(v, t = true) {
-            if (!v || v === "---") return "---";
-            const date = isNaN(v) ? new Date(v) : new Date(Math.round((v - 25569) * 86400 * 1000));
-            return date.toLocaleString('en-GB', { day:'2-digit', month:'2-digit', year:'numeric', ...(t && { hour:'2-digit', minute:'2-digit' }) });
-        }
         function getVal(item, keys) { for (let k of Object.keys(item)) { for (let target of keys) { if (k.toLowerCase().replace(/[^a-z0-9]/g, '').includes(target.toLowerCase().replace(/[^a-z0-9]/g, ''))) return item[k]; } } return "---"; }
 
-        async function completeTask(id, pic) {
-            if (currentUser !== pic) return alert("Unauthorized");
-            if (!confirm(`Mark ID ${id} as COMPLETE?`)) return;
-            const btn = event.target; btn.innerText = "..."; btn.disabled = true;
-            try {
-                // FIXED: We send the ID as a string to match Excel
-                const res = await fetch(updateURL, { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({ recordID: String(id), pic: currentUser, completionDate: new Date().toISOString() }) });
-                if(res.ok) { alert("Done!"); refreshTemplateLogs(); } else { alert("Sync Error - Check Flow"); btn.innerText = "DONE"; btn.disabled = false; }
-            } catch (e) { alert("Fail"); btn.innerText = "DONE"; btn.disabled = false; }
+        function convertExcelDate(v, isTimestamp = true) {
+            if (!v || v === "---") return "---";
+            
+            // Handle numeric Excel serial numbers (e.g. 46086.5)
+            if (!isNaN(v) && parseFloat(v) > 40000) {
+                let date = new Date(Math.round((v - 25569) * 86400 * 1000));
+                let m = date.getUTCMonth() + 1;
+                let d = date.getUTCDate();
+                let y = date.getUTCFullYear();
+                let hh = String(date.getUTCHours()).padStart(2, '0');
+                let mm = String(date.getUTCMinutes()).padStart(2, '0');
+                return isTimestamp ? `${m}/${d}/${y} ${hh}:${mm}` : `${m}/${d}/${y}`;
+            }
+
+            // Handle string dates (e.g. 6/3/2026)
+            let str = String(v).replace('Z', '').trim();
+            let slashMatch = str.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})(.*)/);
+            if (slashMatch) {
+                let timePart = slashMatch[4].trim() || "00:00";
+                // Forced Flipping logic: Month/Day/Year
+                return isTimestamp ? `${slashMatch[2]}/${slashMatch[1]}/${slashMatch[3]} ${timePart}` : `${slashMatch[2]}/${slashMatch[1]}/${slashMatch[3]}`;
+            }
+            return str;
         }
 
         async function refreshTemplateLogs(s = false) {
             const st = document.getElementById('tempSyncStatus'); if(!s) st.classList.add('sync-active');
             try {
-                const r = await fetch(templateFetchURL, { method: 'POST', body: JSON.stringify({}) });
+                const r = await fetch(templateFetchURL + "&cb=" + Date.now(), { method: 'POST', body: JSON.stringify({}) });
                 const d = await r.json();
-                allTemplates = d.map(i => {
-                    const realID = i['Id'] || getVal(i, ['Id']); // STRICT ID CHECK
-                    return { 
-                        id: realID,
-                        startTime: convertExcelDate(getVal(i, ['Start time'])), 
-                        requestor: getVal(i, ['Requestor']), 
-                        style: getVal(i, ['Style Number']), 
-                        jobNo: getVal(i, ['Job Number']), 
-                        machine: getVal(i, ['Machine Type']), 
-                        requiredDate: convertExcelDate(getVal(i, ['Required Date']), false), 
-                        completeDate: getVal(i, ['Complete Date']), 
-                        pic: getVal(i, ['M&A PIC']), 
-                        raw: getVal(i, ['Start time']) 
-                    }
-                }).sort((a,b)=>b.raw - a.raw);
+                allTemplates = d.map(i => ({ 
+                    id: i['Id'] || getVal(i, ['Id']),
+                    startTime: convertExcelDate(getVal(i, ['Start time'])), 
+                    section: getVal(i, ['Section']),
+                    requestor: getVal(i, ['Requestor']), 
+                    style: getVal(i, ['Style Number']), 
+                    jobNo: getVal(i, ['Job Number']), 
+                    machine: getVal(i, ['Machine Type']), 
+                    requiredDate: convertExcelDate(getVal(i, ['Required Date']), false), 
+                    completeDate: getVal(i, ['Complete Date']), 
+                    qty: getVal(i, ['Quantity', 'Complete Qty', 'Qty']),
+                    pic: getVal(i, ['M&A PIC']), 
+                    raw: getVal(i, ['Start time']) 
+                })).sort((a,b)=>b.raw - a.raw);
                 st.innerText = "LIVE: " + new Date().toLocaleTimeString(); st.classList.remove('sync-active'); applyTempFilters();
             } catch (e) { st.innerText = "Error"; }
         }
+
+        function switchTab(t) { document.querySelectorAll('.tab-content').forEach(el => el.classList.add('hidden')); document.getElementById(`content-${t}`).classList.remove('hidden'); document.querySelectorAll('nav button').forEach(b => b.classList.remove('tab-active')); document.getElementById(`tab-${t}`).classList.add('tab-active'); document.getElementById('mainTitle').innerText = t === 'template' ? 'Template Requests' : 'Auto Template Machine Setting Log'; }
+        function login() { const u = document.getElementById('userSelect').value; if (!u) return alert("Select Name"); localStorage.setItem('ma_session_user', u); currentUser = u; updateSessionUI(); applyTempFilters(); }
+        function logout() { localStorage.removeItem('ma_session_user'); currentUser = null; updateSessionUI(); applyTempFilters(); }
+        function updateSessionUI() { const lv = document.getElementById('loginView'), av = document.getElementById('activeUserView'); if (currentUser) { lv.classList.add('hidden'); av.classList.remove('hidden'); document.getElementById('displayUserName').innerText = currentUser; } else { lv.classList.remove('hidden'); av.classList.add('hidden'); } }
 
         function applyTempFilters() {
             const sv = document.getElementById('tempSearch').value.toLowerCase();
             const f = allTemplates.filter(t => Object.values(t).some(v => String(v).toLowerCase().includes(sv)));
             document.getElementById('tempTable').innerHTML = f.map(t => {
                 const done = t.completeDate && t.completeDate !== '---', mine = currentUser === t.pic;
-                return `<tr class="border-b hover:bg-slate-50 transition-colors"><td class="p-3 text-slate-400 font-mono">${t.id}</td><td class="p-3 whitespace-nowrap">${t.startTime}</td><td class="p-3">${t.requestor}</td><td class="p-3 font-bold">${t.style}</td><td class="p-3 font-bold">${t.jobNo}</td><td class="p-3 font-medium text-blue-600">${t.machine}</td><td class="p-3 text-red-600 font-bold">${t.requiredDate}</td><td class="p-3"><span class="px-2 py-0.5 rounded-full text-[10px] font-bold ${done ? 'bg-emerald-100 text-emerald-600' : 'bg-amber-100 text-amber-600'}">${done ? 'COMPLETED' : 'PENDING'}</span></td><td class="p-3 font-medium ${mine ? 'text-blue-700 underline underline-offset-4' : ''}">${t.pic}</td><td class="p-3">${done ? `<span class="text-[10px] text-emerald-600 font-bold">${convertExcelDate(t.completeDate)}</span>` : (mine ? `<button onclick="completeTask('${t.id}', '${t.pic}')" class="bg-blue-600 text-white text-[10px] font-bold px-3 py-1 rounded shadow hover:bg-blue-700">DONE</button>` : `<span class="text-[9px] text-slate-300 italic uppercase tracking-tighter">Locked</span>`)}</td></tr>`;
+                const now = new Date();
+                const defaultDate = (now.getMonth() + 1) + "/" + now.getDate() + "/" + now.getFullYear();
+                const defaultTime = String(now.getHours()).padStart(2, '0') + ":" + String(now.getMinutes()).padStart(2, '0');
+                
+                return `<tr class="border-b hover:bg-slate-50 transition-colors">
+                    <td class="p-3 text-slate-400 font-mono">${t.id}</td>
+                    <td class="p-3 whitespace-nowrap text-slate-500">${t.startTime}</td>
+                    <td class="p-3 text-slate-500">${t.section}</td>
+                    <td class="p-3 text-slate-500">${t.requestor}</td>
+                    <td class="p-3 text-slate-500">${t.style}</td>
+                    <td class="p-3 text-slate-500">${t.jobNo}</td>
+                    <td class="p-3 text-slate-400">${t.machine}</td>
+                    <td class="p-3 text-slate-400">${t.requiredDate}</td>
+                    <td class="p-3"><span class="px-2 py-0.5 rounded-full text-[10px] font-bold ${done ? 'bg-emerald-100 text-emerald-600' : 'bg-amber-100 text-amber-600'}">${done ? 'COMPLETED' : 'PENDING'}</span></td>
+                    <td class="p-3 font-medium ${mine ? 'text-blue-700 underline underline-offset-4' : 'text-slate-500'}">${t.pic}</td>
+                    <td class="p-3">${done ? `<span class="font-bold text-slate-700">${t.qty}</span>` : (mine ? `<input type="number" id="qty-${t.id}" class="manual-input qty-input" placeholder="Qty">` : `---`)}</td>
+                    <td class="p-3">${done ? `<span class="text-[10px] text-emerald-600 font-bold">${convertExcelDate(t.completeDate)}</span>` : (mine ? `<div class="flex flex-col"><input type="text" id="date-${t.id}" class="manual-input" value="${defaultDate}"><input type="text" id="time-${t.id}" class="manual-input" value="${defaultTime}"><button onclick="saveManualComplete('${t.id}')" class="bg-blue-600 text-white text-[9px] font-bold px-2 py-1 rounded">SAVE</button></div>` : `<span class="text-[9px] text-slate-300 italic uppercase">Locked</span>`)}</td>
+                </tr>`;
             }).join('');
+        }
+
+        async function saveManualComplete(id) {
+            const dateInput = document.getElementById(`date-${id}`).value;
+            const timeInput = document.getElementById(`time-${id}`).value;
+            const qtyInput = document.getElementById(`qty-${id}`).value;
+            if(!dateInput || !timeInput || !qtyInput) return alert("Please fill Qty, Date and Time");
+            const parts = dateInput.split('/');
+            const isoDate = `${parts[2]}-${parts[0].padStart(2,'0')}-${parts[1].padStart(2,'0')}`;
+            const manualTimestamp = `${isoDate} ${timeInput}`;
+            const btn = event.target; btn.innerText = "..."; btn.disabled = true;
+            try {
+                const res = await fetch(updateURL, { 
+                    method: 'POST', 
+                    headers: {'Content-Type': 'application/json'}, 
+                    body: JSON.stringify({ recordID: String(id), pic: currentUser, completionDate: manualTimestamp, completeQty: qtyInput }) 
+                });
+                if(res.ok) { refreshTemplateLogs(); } else { alert("Sync Error"); btn.innerText = "SAVE"; btn.disabled = false; }
+            } catch (e) { alert("Fail"); btn.innerText = "SAVE"; btn.disabled = false; }
         }
 
         const mList = Object.keys(machineSpecs);
         mList.forEach(m => { const b = document.createElement('button'); b.innerText = m; b.id = `btn-${m}`; b.className = "machine-btn px-4 py-1.5 border rounded-full text-sm bg-white shadow-sm hover:border-blue-300 transition-all"; b.onclick = () => setMachineFilter(m); document.getElementById('filterContainer').appendChild(b); });
-
-        async function refreshLiveLogs(s = false) {
-            const st = document.getElementById('syncStatus'); if(!s) st.classList.add('sync-active');
-            try {
-                const r = await fetch(fetchURL, { method: 'POST', body: JSON.stringify({}) });
-                const d = await r.json();
-                allRecords = d.map(i => ({ timestamp: convertExcelDate(getVal(i, ['Timestamp'])), machine: getVal(i, ['Machine']), pic: getVal(i, ['PIC']), type: getVal(i, ['Type']), file: getVal(i, ['FileName']), time: getVal(i, ['Time']), raw: getVal(i, ['Timestamp']) })).sort((a,b)=>b.raw - a.raw);
-                st.innerText = "LIVE: " + new Date().toLocaleTimeString(); st.classList.remove('sync-active'); applyFilters();
-            } catch (e) {}
-        }
-
-        async function addEntry() {
-            const m = document.getElementById('mID').value, p = document.getElementById('picName').value, f = document.getElementById('fName').value, t = document.getElementById('sTime').value, isN = document.getElementById('requestToggle').checked;
-            if(!p || !f || !t) return alert("Fill all fields");
-            const b = document.getElementById('submitBtn'); b.innerText = "Saving..."; b.disabled = true;
-            try {
-                const res = await fetch(postURL, { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({timestamp: new Date().toLocaleString(), machine: m, pic: p, type: isN ? "NEW REQUEST" : "SETTING", file: f, time: t}) });
-                if(res.ok) { document.getElementById('fName').value = ''; document.getElementById('sTime').value = ''; setTimeout(refreshLiveLogs, 2000); }
-            } finally { b.innerText = "Add Record"; b.disabled = false; }
-        }
-
+        async function refreshLiveLogs(s = false) { const st = document.getElementById('syncStatus'); if(!s) st.classList.add('sync-active'); try { const r = await fetch(fetchURL + "&cb=" + Date.now(), { method: 'POST', body: JSON.stringify({}) }); const d = await r.json(); allRecords = d.map(i => ({ timestamp: convertExcelDate(getVal(i, ['Timestamp'])), machine: getVal(i, ['Machine']), pic: getVal(i, ['PIC']), type: getVal(i, ['Type']), file: getVal(i, ['FileName']), time: getVal(i, ['Time']), raw: getVal(i, ['Timestamp']) })).sort((a,b)=>b.raw - a.raw); st.innerText = "LIVE: " + new Date().toLocaleTimeString(); st.classList.remove('sync-active'); applyFilters(); } catch (e) {} }
+        async function addEntry() { const m = document.getElementById('mID').value, p = document.getElementById('picName').value, f = document.getElementById('fName').value, t = document.getElementById('sTime').value, isN = document.getElementById('requestToggle').checked; if(!p || !f || !t) return alert("Fill all fields"); const b = document.getElementById('submitBtn'); b.innerText = "Saving..."; b.disabled = true; try { const now = new Date(); const localStr = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}-${String(now.getDate()).padStart(2,'0')} ${String(now.getHours()).padStart(2,'0')}:${String(now.getMinutes()).padStart(2,'0')}`; const res = await fetch(postURL, { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({timestamp: localStr, machine: m, pic: p, type: isN ? "NEW REQUEST" : "SETTING", file: f, time: t}) }); if(res.ok) { document.getElementById('fName').value = ''; document.getElementById('sTime').value = ''; refreshLiveLogs(); } } finally { b.innerText = "Add Record"; b.disabled = false; } }
         let curF = 'ALL';
-        function setMachineFilter(m) {
-            curF = m; document.querySelectorAll('.machine-btn').forEach(b => b.classList.remove('active-filter')); document.getElementById(`btn-${m}`).classList.add('active-filter');
-            const box = document.getElementById('machineDetailBox'); if(m === 'ALL') { box.classList.add('hidden'); } else { box.innerText = `${machineSpecs[m].brand} - ${machineSpecs[m].model}`; box.classList.remove('hidden'); }
-            applyFilters();
-        }
-
-        function applyFilters() {
-            const s = document.getElementById('fileSearch').value.toLowerCase();
-            const f = allRecords.filter(r => (curF==='ALL' || r.machine===curF) && (String(r.file).toLowerCase().includes(s) || String(r.pic).toLowerCase().includes(s)));
-            document.getElementById('logTable').innerHTML = f.map(r => `<tr class="border-b hover:bg-slate-50 transition-colors"><td class="p-3 text-slate-400 font-mono whitespace-nowrap">${r.timestamp}</td><td class="p-3 font-bold text-blue-700">${r.machine}</td><td class="p-3 font-medium">${r.pic}</td><td class="p-3"><span class="px-2 py-0.5 rounded-full text-[10px] font-bold ${r.type === 'NEW REQUEST' ? 'bg-orange-100 text-orange-600' : 'bg-blue-100 text-blue-600'}">${r.type}</span></td><td class="p-3 font-mono">${r.file}</td><td class="p-3 font-bold">${r.time} min</td></tr>`).join('');
-        }
-
+        function setMachineFilter(m) { curF = m; document.querySelectorAll('.machine-btn').forEach(b => b.classList.remove('active-filter')); document.getElementById(`btn-${m}`).classList.add('active-filter'); const box = document.getElementById('machineDetailBox'); if(m === 'ALL') { box.classList.add('hidden'); } else { box.innerText = `${machineSpecs[m].brand} - ${machineSpecs[m].model}`; box.classList.remove('hidden'); } applyFilters(); }
+        function applyFilters() { const s = document.getElementById('fileSearch').value.toLowerCase(); const f = allRecords.filter(r => (curF==='ALL' || r.machine===curF) && (String(r.file).toLowerCase().includes(s) || String(r.pic).toLowerCase().includes(s))); document.getElementById('logTable').innerHTML = f.map(r => `<tr class="border-b hover:bg-slate-50 transition-colors"><td class="p-3 text-slate-400 font-mono whitespace-nowrap">${r.timestamp}</td><td class="p-3 font-bold text-blue-700">${r.machine}</td><td class="p-3 font-medium">${r.pic}</td><td class="p-3"><span class="px-2 py-0.5 rounded-full text-[10px] font-bold ${r.type === 'NEW REQUEST' ? 'bg-orange-100 text-orange-600' : 'bg-blue-100 text-blue-600'}">${r.type}</span></td><td class="p-3 font-mono">${r.file}</td><td class="p-3 font-bold">${r.time} min</td></tr>`).join(''); }
         updateSessionUI(); refreshTemplateLogs(); refreshLiveLogs();
         setInterval(() => { refreshTemplateLogs(true); refreshLiveLogs(true); }, 15000);
     </script>
